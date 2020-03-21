@@ -1,0 +1,624 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta property="og:title" content="Coronavirus simulation test">
+    <meta property="og:description" content="Testing the contraction of the Coronavirus. Adjustable parameters.">
+    <meta property="og:site_name" content="Coronavirus simulation test">
+    <meta property="og:image" content="https://testcoronasimu.000webhostapp.com/flatten_the_curve.png">
+    <meta name="twitter:title" content="Coronavirus simulation test">
+    <meta name="twitter:description" content="Testing the contraction of the Coronavirus. Adjustable parameters.">
+    <meta name="twitter:image" content="https://testcoronasimu.000webhostapp.com/flatten_the_curve.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Corona simulation test</title>
+      
+    <h2 align="center">Coronavirus simulation test</h2>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+    <p align="center">
+        <canvas id="myCanvas" width="1200" height="900"></canvas>
+        <br/>
+        <canvas id="myGraph"  width="1200" height="100"></canvas>
+
+        Number: <input name="nballs" size="5" type="text" maxlength="4" id="nballs" value="200"/>
+        Incubation time: <input name="incubation" size="5" type="text" maxlength="4" id="incubation" value="500"/>
+        Recovery time: <input name="healing" size="5" type="text" maxlength="4" id="healing" value="2500"/>
+        <br />
+        Contraction probability: <input name="contrprob" size="5" type="text" maxlength="4" id="contrprob" value="75.0"/>%&nbsp;
+        Death probability: <input name="deathprob" size="5" type="text" maxlength="4" id="deathprob" value="3.5"/>%&nbsp;
+        Isolation: <input name="isolation" size="5" type="text" maxlength="4" id="isolation" value="50.0"/>%&nbsp;
+        <br />
+        Sick: <input disabled name="sick" size="5" type="text" maxlength="4" id="sick" value="1"/>
+        Infected: <input disabled name="infected" size="5" type="text" maxlength="4" id="infected" value="0"/>
+        Healthy:  <input disabled name="healthy" size="5" type="text" maxlength="4" id="healthy" value="0"/>
+        Recovered: <input disabled name="recovered" size="5" type="text" maxlength="4" id="recovered" value="0"/>
+        Deaths: <input disabled name="deaths" size="5" type="text" maxlength="4" id="deaths" value="0"/>
+        <br />
+        Press spacebar or tap screen to pause!
+    </p>
+    <br/>
+    <footer align="center"><small>&copy; Copyright <span id="year"></span>, Teemu Saarelainen.<br />This work is free. It most likely contains bugs. Be warned. <br /> You can redistribute it and/or modify it under the
+    terms of the WTFPL-license, Version 2.<br /></b>See <a href="COPYING">COPYING</a> for details.</small></footer>
+</head>
+<body>
+
+ 
+<script>
+    
+    /* Copyright © 2020 Teemu Saarelainen <teemu_insert_dot_here_saarelainen_at_domain_gmail_insert_dot_here_com>
+    This work is free. You can redistribute it and/or modify it under the
+    terms of the Do What The Fuck You Want To Public License, Version 2,
+    as published by Sam Hocevar. See the COPYING file for more details.
+    */
+    
+    var canvas;
+    var graph_canvas;
+    var ctx;
+    var graph_ctx;
+    var ballRadius;
+    var nballs = 500;
+    var simulate = true;
+    var iteration = 0;
+    var simu_iteration = 0;
+
+    var sick = 1;
+    var infected = 0;
+    var healthy = nballs-sick;
+    var recovered = 0;
+    var deaths = 0;
+    
+    var incubationtime = 500;
+    var healingtime = 2500;
+    
+    var contractionprobability = 75.0;
+    var deathprobability = 3.5;
+    var isolation = 50.0;
+    
+    var balls = [];
+    
+    document.getElementById("year").innerHTML = new Date().getFullYear();
+    
+    function setupSimulation(){
+	// JavaScript code goes here
+    document.getElementById("nballs").setAttribute("value",nballs);
+    document.getElementById("incubation").setAttribute("value",incubationtime);
+
+    canvas = document.getElementById("myCanvas");
+    ctx = canvas.getContext("2d");
+
+    graph_canvas = document.getElementById("myGraph");
+    graph_ctx = graph_canvas.getContext("2d");
+
+    ballRadius = 5.0;
+    balls = [];
+    
+    sick = 1;
+    infected = 0;
+    healthy = nballs-sick;
+        
+        iteration = 0;
+        simu_iteration = 0 ;
+        simulate = true;
+
+    var ball_x = canvas.width/2;
+    var ball_y = canvas.height/2;
+    var dx = 2.0*(Math.random()-0.5);
+    var dy = 2.0*(Math.random()-0.5);
+    
+
+    for (i=0; i<nballs-1; i++){
+        let ball = {x: ballRadius+Math.random()*(canvas.width - 2*ballRadius), 
+                    y: ballRadius+Math.random()*(canvas.height - 2*ballRadius), 
+                    dx: 2.0*(Math.random()-0.5),
+                    dy: 2.0*(Math.random()-0.5),
+                    timeinfected: 0,
+                    timesick: 0,
+                    isolated: false,
+                    color: "blue"
+                    };
+        
+        if (Math.random()*100.0 < isolation){
+            ball.isolated = true;
+        }
+        
+        while (!spawnLocationAcceptable(ball)){
+            ball.x = ballRadius+Math.random()*(canvas.width - 2*ballRadius-1);
+            ball.y = ballRadius+Math.random()*(canvas.height - 2*ballRadius-1);
+            // for testing only...
+            //ball.dx = 0;
+            //ball.dy = 0;
+        }
+        
+        
+        var limit = 0.2;
+        if (ball.dx < limit && ball.dx >= 0.0){
+            ball.dx = limit;
+        }
+        if (ball.dx > -limit && ball.dx <= 0.0){
+            ball.dx = -limit;
+        }
+        if (ball.dy < limit && ball.dy >= 0.0){
+            ball.dy = limit;
+        }
+        if (ball.dy > -limit && ball.dy <= 0.0){
+            ball.dy = -limit;
+        }
+        
+        balls.push(ball); 
+    }
+    // Push one sick individual into the array
+    let ball = {x: Math.random()*canvas.width, 
+                y: Math.random()*canvas.height, 
+                dx: 2*(Math.random()-0.5),
+                dy: 2*(Math.random()-0.5),
+                timeinfected: 0,
+                timesick: 0,
+                isolated: false,
+                color: "red"
+                };
+    balls.push(ball);
+    
+    }
+    
+    function spawnLocationAcceptable(b){
+        if (balls.length < 2){
+            return true;
+        }
+        for (i=0;i<balls.length;i++){
+            if ( ((balls[i].x - b.x)*(balls[i].x - b.x) + (balls[i].y - b.y)*(balls[i].y - b.y)) <=
+                 4*ballRadius*ballRadius ){
+                return false;
+            }
+        }
+     
+        return true; 
+    }
+    setupSimulation();
+    
+    document.addEventListener("touchstart", onTouch, false);
+    //document.addEventListener("touchend", onTouch, false);
+    //document.addEventListener("touchmove", onTouch, false);
+    document.addEventListener("keydown", keyDownHandler, false);
+
+    function keyDownHandler(e) {
+        if(e.key == " ")  {
+            simulate = !simulate;
+        }
+        if (e.key == "Enter"){   
+            var number = document.getElementById('nballs').value;
+            var inctime = document.getElementById('incubation').value;
+            var rectime = document.getElementById('healing').value;
+            var contr = document.getElementById('contrprob').value;
+            var prob = document.getElementById('deathprob').value;
+            var isol = document.getElementById('isolation').value;
+
+            if (number > 0 && number < 10000){
+                nballs = number;
+            }   
+            if (inctime > 0 && inctime < 10000){
+                incubationtime = inctime;
+            }
+            if (rectime > 0 && rectime < 10000){
+                healingtime = rectime;
+            }
+            if (prob >= 0 && prob < 100){
+                deathprobability = prob;
+            }
+            if (isol >= 0 && isol < 100.0){
+                isolation = isol;
+            }
+            if (contr >= 0 && contr <= 100.0){
+                contractionprobability = contr;
+            }
+ 
+            setupSimulation();
+        }
+        
+    }
+
+    function onTouch(evt) {
+        simulate = !simulate;
+        return;
+        /*
+      evt.preventDefault();
+      if (evt.touches.length > 1 || (evt.type == "touchend" && evt.touches.length > 0))
+        return;
+
+      var newEvt = document.createEvent("MouseEvents");
+      var type = null;
+      var touch = null;
+
+      switch (evt.type) {
+        case "touchstart": 
+          type = "mousedown";
+          touch = evt.changedTouches[0];
+          break;
+        case "touchmove":
+          type = "mousemove";
+          touch = evt.changedTouches[0];
+          break;
+        case "touchend":        
+          type = "mouseup";
+          touch = evt.changedTouches[0];
+          break;
+      }
+
+      newEvt.initMouseEvent(type, true, true, evt.originalTarget.ownerDocument.defaultView, 0,
+                            touch.screenX, touch.screenY, touch.clientX, touch.clientY,
+                            evt.ctrlKey, evt.altKey, evt.shiftKey, evt.metaKey, 0, null);
+      evt.originalTarget.dispatchEvent(newEvt);
+      */
+    }
+
+    
+    function howManySickAndHealthy(){
+        
+        var n_sick = 0;
+        var n_infected = 0;
+        var n_healthy = 0;
+        var n_recovered = 0;
+        var n_deaths = 0;
+        for (i=0;i<nballs;i++){
+            if (balls[i].color == "red"){
+                n_sick++;
+            }
+            else if (balls[i].color == "blue"){
+                n_healthy++;
+            }
+            else if (balls[i].color == "yellow"){
+                n_infected++;
+            }
+            else if (balls[i].color == "green"){
+                n_recovered++;
+            }
+            else if (balls[i].color == "black"){
+                n_deaths++;
+            }
+ 
+        }
+        sick = n_sick;
+        infected = n_infected;
+        healthy = n_healthy;
+        recovered = n_recovered;
+        deaths = n_deaths;
+        document.getElementById("sick").setAttribute("value",sick);
+        document.getElementById("infected").setAttribute("value",infected);
+        document.getElementById("healthy").setAttribute("value",healthy);
+        document.getElementById("recovered").setAttribute("value",recovered);
+        document.getElementById("deaths").setAttribute("value",deaths);
+        
+        if (iteration == 0){
+            graph_ctx.clearRect(0,0,graph_canvas.width, graph_canvas.height);
+        }
+        graph_ctx.beginPath();
+        graph_ctx.moveTo(iteration,0);
+        graph_ctx.strokeStyle = "#0095DD";
+        graph_ctx.lineTo(iteration,graph_canvas.height*healthy/nballs);
+        graph_ctx.stroke();
+        
+        graph_ctx.beginPath();
+        graph_ctx.moveTo(iteration,graph_canvas.height*healthy/nballs);
+        graph_ctx.strokeStyle = "#00DD00";
+        graph_ctx.lineTo(iteration,graph_canvas.height*(healthy+recovered)/nballs);
+        graph_ctx.stroke();
+       
+        graph_ctx.beginPath();
+        graph_ctx.moveTo(iteration,graph_canvas.height*(healthy+recovered)/nballs);
+        graph_ctx.strokeStyle = "#DD95DD";
+        graph_ctx.lineTo(iteration,graph_canvas.height*(healthy+recovered+infected)/nballs);
+        graph_ctx.stroke();
+ 
+        graph_ctx.beginPath();
+        graph_ctx.moveTo(iteration,graph_canvas.height*(healthy+recovered+infected)/nballs);
+        graph_ctx.strokeStyle = "#000000";
+        graph_ctx.lineTo(iteration,graph_canvas.height*(healthy+recovered+infected+deaths)/nballs);
+        graph_ctx.stroke();
+
+        graph_ctx.beginPath();
+        graph_ctx.moveTo(iteration,graph_canvas.height*(healthy+recovered+infected+deaths)/nballs);
+        graph_ctx.strokeStyle = "#DD0000";
+        graph_ctx.lineTo(iteration,graph_canvas.height*(healthy+recovered+infected+deaths+sick)/nballs);
+        graph_ctx.stroke();
+
+        //console.log(iteration + " - " + healthy/nballs );
+
+    }
+    
+    function drawHealthyBall(x,y) {
+    ctx.beginPath();
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "#0095DD";
+    ctx.fill();
+    ctx.closePath();
+    }
+
+    function drawSickBall(x,y) {
+    ctx.beginPath();
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "#DD0000";
+    ctx.fill();
+    ctx.closePath();
+    }
+
+    function drawInfectedBall(x,y) {
+    ctx.beginPath();
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "#DD95DD";
+    ctx.fill();
+    ctx.closePath();
+    }
+    
+    function drawRecoveredBall(x,y) {
+    ctx.beginPath();
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "#00DD00";
+    ctx.fill();
+    ctx.closePath();
+    }    
+
+    function drawDeadBall(x,y) {
+    ctx.beginPath();
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "#000000";
+    ctx.fill();
+    ctx.closePath();
+    }    
+
+function updateBalls(){
+            //ball_x += dx;
+            //ball_y += dy;
+    
+    for (i=0;i<nballs;i++){
+        if (balls[i].color == "black"){
+            continue;
+        }
+        if (!balls[i].isolated){
+            balls[i].x += balls[i].dx;
+            balls[i].y += balls[i].dy;
+        }
+        
+        if (balls[i].color == "yellow"){
+            balls[i].timeinfected += 1;
+        }
+        
+        if (balls[i].color == "red"){
+            balls[i].timesick += 1;
+        }
+        
+        
+        if (balls[i].timeinfected >= incubationtime && balls[i].color == "yellow"){
+            balls[i].color = "red";
+            
+        }
+        
+        if (balls[i].timesick >= healingtime && balls[i].color == "red"){
+            if (Math.random()*100.0 < deathprobability){
+                balls[i].color = "black";
+                balls[i].dx = 0;
+                balls[i].dy = 0;
+            }
+            else {
+                balls[i].color = "green";
+                balls[i].timesick = -1;
+            }
+        }
+ 
+        
+    }
+    
+}    
+
+/*    function checkCollisions(){
+        if (ball_x < ballRadius){
+            dx = -dx;
+        }
+        if (ball_y < ballRadius){
+            dy = -dy;
+        }
+        if (ball_x > canvas.width-ballRadius){
+            dx = -dx;
+        }
+        if (ball_y > canvas.height-ballRadius){
+            dy = -dy;
+        }
+    }
+*/
+    
+    function checkCollisionForBall(b){
+        if (b.x <= ballRadius){
+            if (b.dx < 0)
+                b.dx = -b.dx;
+        }
+        if (b.y <= ballRadius){
+            if (b.dy < 0)
+                b.dy = -b.dy;
+        }
+        if (b.x >= canvas.width-ballRadius-1.0){
+            if (b.dx > 0)
+                b.dx = -b.dx;
+        }
+        if (b.y >= canvas.height-ballRadius-1.0){
+            if (b.dy > 0)
+                b.dy = -b.dy;
+        }
+    }
+    
+    function checkCollisionAgainstBall(b1, b2){
+        
+        if (b1.color == "black" || b2.color == "black"){
+            return;
+        }
+        
+        if (b1.x - b2.x > 2*ballRadius)
+            return;
+        
+        if (b1.y - b2.y > 2*ballRadius)
+            return;
+        
+        if (b2.x - b1.x > 2*ballRadius)
+            return;
+        
+        if (b2.y - b1.y > 2*ballRadius)
+            return;
+
+        
+        var dist_squared = (b1.x - b2.x)*(b1.x - b2.x) + (b1.y - b2.y)*(b1.y - b2.y);
+        
+        if (dist_squared < 4*(ballRadius)*(ballRadius)){
+
+            // Collision!
+            /*
+            if (b1.color == "red" || b2.color == "red"){
+                b1.color = "red";
+                b2.color = "red";
+            }
+            */
+            
+            if (b1.color == "red" && b2.color == "blue" && 100*Math.random() <= contractionprobability){
+                b2.color = "yellow";
+                //console.log("Infected!");
+            }
+            else if (b2.color == "red" && b1.color == "blue" && 100*Math.random() <= contractionprobability){
+                b1.color = "yellow";
+                //console.log("Infected!");
+            }
+            
+            //velocities
+            if (!b1.isolated && !b2.isolated){
+                var temp_dx = b1.dx;
+                b1.dx = b2.dx;
+                b2.dx = temp_dx;
+                var temp_dy = b1.dy;
+                b1.dy = b2.dy;
+                b2.dy = temp_dy;
+            }
+            else if (b1.isolated){  // this should be computed...
+                
+                /*
+                let n = {x: 0, y:0};
+                n.x = b2.x - b1.x;
+                n.y = b2.y - b1.y;                
+                
+                var len = Math.sqrt(n.x*n.x + n.y*n.y);
+                n.x = n.x / len;
+                n.y = n.y / len;
+                
+                var temp = b2;
+                b2.dx = temp.dx - 2*n.x*(temp.dx*n.x + temp.dy*n.y);
+                b2.dy = temp.dy - 2*n.y*(temp.dx*n.x + temp.dy*n.y);
+                
+                console.log(b2.dx + "," + b2.dy);
+                */
+                /*
+                b2.dx = -b2.dx;
+                b2.dy = -b2.dy;
+                */
+                computeVelocity(b1, b2);
+            }
+            else if (b2.isolated){  // this should be computed...
+                
+                /*
+                let n = {x: 0, y:0};
+                n.x = b1.x - b2.x;
+                n.y = b1.y - b2.y;                
+                
+                var len = Math.sqrt(n.x*n.x + n.y*n.y);
+                n.x = n.x / len;
+                n.y = n.y / len;
+                
+                var temp = b1;
+                b1.dx = temp.dx - 2*n.x*(temp.dx*n.x + temp.dy*n.y);
+                b1.dy = temp.dy - 2*n.y*(temp.dx*n.x + temp.dy*n.y);
+                */
+                
+                /*
+                b1.dx = -b1.dx;
+                b1.dy = -b1.dy;
+                */
+                
+                computeVelocity(b2, b1);
+                
+            }
+        }
+    }
+
+    function computeVelocity(b_isolated, b_collider){
+        
+        let n = {x: 0.0, y:0.0};
+        n.x = b_collider.x - b_isolated.x;
+        n.y = b_collider.y - b_isolated.y;                
+
+        // normalize
+        var len = Math.sqrt(n.x*n.x + n.y*n.y);
+        n.x = n.x / len;
+        n.y = n.y / len;
+
+        var dotproduct = (b_collider.dx*n.x + b_collider.dy*n.y);
+        
+        b_collider.dx = b_collider.dx - 2*n.x*dotproduct;
+        b_collider.dy = b_collider.dy - 2*n.y*dotproduct;
+
+    }
+    
+    function draw(){
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        //drawHealthyBall(canvas.width/2, canvas.height/2);
+        //drawSickBall(ball_x,ball_y);
+        //drawInfectedBall(100,100);
+        
+        for (i=0;i<nballs;i++){
+            if (balls[i].color == "blue"){
+                drawHealthyBall(balls[i].x, balls[i].y);
+            }
+            else if (balls[i].color == "red"){
+                drawSickBall(balls[i].x, balls[i].y);
+            }
+            else if (balls[i].color == "yellow"){
+                drawInfectedBall(balls[i].x, balls[i].y);
+            }
+            else if (balls[i].color == "green"){
+                drawRecoveredBall(balls[i].x, balls[i].y);
+            }
+            else if (balls[i].color == "black"){
+                drawDeadBall(balls[i].x, balls[i].y);
+            }
+
+        }
+        
+        if (simulate){
+            updateBalls();
+            //checkCollisions();
+            for (i=0;i<nballs;i++){
+                checkCollisionForBall(balls[i]);
+                for (j=i+1;j<nballs;j++){
+                    checkCollisionAgainstBall(balls[i], balls[j]);
+                }
+            }
+            
+            howManySickAndHealthy();
+            simu_iteration++;
+            if (simu_iteration % 10 == 0){
+                iteration++;
+            }
+            if (iteration >= graph_canvas.width){
+                simulate = false;
+                simu_iteration = 0;
+                iteration=0;
+            }
+        }
+        
+        
+    }
+    
+    
+    setInterval(draw, 16);
+    
+    
+    
+</script>
+
+</body>
+</html>
