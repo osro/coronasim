@@ -1,0 +1,10 @@
+{
+  "name": "coronasim",
+  "version": "0.0.1",
+  "description": "Corona Simulation Test",
+  "main": "index.js",
+  "repository": "https://github.com/osro/coronasim",
+  "author": "Ossi Rönnberg",
+  "license": "MIT",
+  "private": false
+}
