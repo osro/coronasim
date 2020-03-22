@@ -30,7 +30,7 @@ export class Entity {
     private status: string;
     private entityPool: Entity[];
 
-    constructor(graphics: Graphics, screen: Rectangle, entityPool: Entity[], status: string = 'healthy') {
+    constructor(graphics: Graphics, screen: Rectangle, entityPool: Entity[], status: string = 'healthy') { 
         this.graphics = graphics;
         this.screen = screen;
         this.radius = 5;
