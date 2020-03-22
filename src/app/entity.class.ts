@@ -1,10 +1,11 @@
-import { Graphics, Point, Rectangle } from "pixi.js";
+import { Point, Rectangle, Sprite, Container, Texture } from "pixi.js";
 
-const healthy_color = 0x0095DD;
+
+const healthy_color = 0xFFFFFF; // no tint
 const sick_color = 0xDD0000;
 const infected_color = 0xDD95DD;
 const recovered_color = 0x00DD00;
-const dead_color = 0x000000;
+// const dead_color = 0x000000;
 
 const STATUS_HEALTHY = 'healthy';
 const STATUS_SICK = 'sick';
@@ -24,14 +25,29 @@ export class Entity {
     private timeInfected: number;
     private timeSick: number;
     // private isolated: boolean;
-    private color: number;
-    private graphics: Graphics;
+    // private color: number;
     private screen: Rectangle;
     private status: string;
     private entityPool: Entity[];
+    private sprite:Sprite;
+    private stage:Container;
 
-    constructor(graphics: Graphics, screen: Rectangle, entityPool: Entity[], status: string = 'healthy') { 
-        this.graphics = graphics;
+    private textureHealthy:Texture;
+    private textureDead:Texture;
+
+    constructor(stage:Container, screen: Rectangle, entityPool: Entity[], status: string = 'healthy') { 
+
+        this.textureHealthy = Texture.from('tile000.png');
+        this.textureDead = Texture.from('tile025.png');
+
+        this.stage = stage;
+        this.sprite = Sprite.from(this.textureHealthy);   
+        this.sprite.scale = new Point(0.6, 0.6);
+
+        this.sprite.anchor.set(0.5);
+        this.sprite.x = 100;
+        this.sprite.y = 100;
+
         this.screen = screen;
         this.radius = 5;
         this.timeInfected = 0;
@@ -41,6 +57,7 @@ export class Entity {
         this.location = new Point(Math.random() * (this.screen.width - this.radius + 1) + this.radius, Math.random() * (this.screen.height - this.radius + 1) + this.radius);
         this.acceleration = new Point(1.0 * (Math.random() - 0.5), 1.0 * (Math.random() - 0.5));
         this.entityPool = entityPool;
+        this.stage.addChild(this.sprite);
     }
 
     public update() {
@@ -77,33 +94,39 @@ export class Entity {
         }
 
         // update color
+        
         switch (this.status) {
             case STATUS_HEALTHY:
-                this.color = healthy_color;
+                this.sprite.tint = healthy_color;
                 break;
 
             case STATUS_SICK:
-                this.color = sick_color;
+                this.sprite.tint  = sick_color;
                 break;
 
             case STATUS_DEAD:
-                this.color = dead_color;
+                this.sprite.tint = healthy_color;
+                this.sprite.texture = this.textureDead;
                 break;
 
             case STATUS_INFECTED:
-                this.color = infected_color;
+                this.sprite.tint  = infected_color;
                 break;
 
             case STATUS_RECOVERED:
-                this.color = recovered_color;
+                this.sprite.tint  = recovered_color;
                 break;
 
             default:
-                this.color = healthy_color;
+                this.sprite.tint = healthy_color;
                 break;
         }
+        
 
         this.checkCollisions();
+
+        this.sprite.x = this.location.x;
+        this.sprite.y = this.location.y;
     }
 
     public checkCollisions() {
@@ -122,13 +145,14 @@ export class Entity {
         });
     }
 
+    /*
     public draw() {
         this.graphics.lineStyle(0);
 
         this.graphics.beginFill(this.color, 1);
         this.graphics.drawCircle(this.location.x - this.radius / 2, this.location.y - this.radius / 2, this.radius);
         this.graphics.endFill();
-    }
+    }*/
 
     public getStatus() {
         return this.status;
