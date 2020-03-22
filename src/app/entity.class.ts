@@ -23,7 +23,7 @@ export class Entity {
     private radius: number;
     private timeInfected: number;
     private timeSick: number;
-    private isolated: boolean;
+    // private isolated: boolean;
     private color: number;
     private graphics: Graphics;
     private screen: Rectangle;
@@ -36,7 +36,7 @@ export class Entity {
         this.radius = 5;
         this.timeInfected = 0;
         this.timeSick = 0;
-        this.isolated = false;
+        // this.isolated = false;
         this.setStatus(status);
         this.location = new Point(Math.random() * (this.screen.width - this.radius + 1) + this.radius, Math.random() * (this.screen.height - this.radius + 1) + this.radius);
         this.acceleration = new Point(1.0 * (Math.random() - 0.5), 1.0 * (Math.random() - 0.5));

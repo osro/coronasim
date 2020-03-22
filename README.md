@@ -15,6 +15,7 @@ Use the package manager Yarn to install all dependenices.
 #### Development envinroment
 
 This should start local webpack-dev-server envinroment to `http://localhost:4200` address.
+
 ```yarn start```
 
 #### Production build (coming soon)
