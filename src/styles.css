@@ -1,0 +1,21 @@
+@tailwind base;
+
+@tailwind components;
+
+@tailwind utilities;
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 1fr;
+    grid-column-gap: 10px;
+    grid-row-gap: 0px;
+}
+
+#pixi-canvas {
+    grid-area: 1 / 1 / 2 / 2;
+}
+
+.controls {
+    grid-area: 1 / 2 / 2 / 3;
+}
