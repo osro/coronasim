@@ -13,11 +13,6 @@ const STATUS_INFECTED = 'infected';
 const STATUS_RECOVERED = 'recovered';
 const STATUS_DEAD = 'dead';
 
-const contractionProbability = 75.0;
-const incubationTime = 500;
-const healingTime = 2500;
-const deathProbability = 3.5;
-
 export class Entity {
     private location: Point;
     private acceleration: Point;
@@ -29,19 +24,23 @@ export class Entity {
     private screen: Rectangle;
     private status: string;
     private entityPool: Entity[];
-    private sprite:Sprite;
-    private stage:Container;
+    private sprite: Sprite;
+    private stage: Container;
 
-    private textureHealthy:Texture;
-    private textureDead:Texture;
+    private textureHealthy: Texture;
+    private textureDead: Texture;
 
-    constructor(stage:Container, screen: Rectangle, entityPool: Entity[], status: string = 'healthy') { 
+    private contractionProbability: number = 75.0;
+    private incubationTime: number = 500;
+    private healingTime: number = 2500;
+    private deathProbability: number = 3.5;
 
+    constructor(stage: Container, screen: Rectangle, entityPool: Entity[], status: string = 'healthy') {
         this.textureHealthy = Texture.from('tile000.png');
         this.textureDead = Texture.from('tile025.png');
 
         this.stage = stage;
-        this.sprite = Sprite.from(this.textureHealthy);   
+        this.sprite = Sprite.from(this.textureHealthy);
         this.sprite.scale = new Point(0.6, 0.6);
 
         this.sprite.anchor.set(0.5);
@@ -76,16 +75,17 @@ export class Entity {
         }
 
         // check if incubation time has been passed
-        if (this.timeInfected >= incubationTime && this.status == STATUS_INFECTED) {
+        if (this.timeInfected >= this.incubationTime && this.status == STATUS_INFECTED) {
             this.status = STATUS_SICK;
         }
 
         // check if time being has passed the healing time
-        if (this.timeSick >= healingTime && this.status == STATUS_SICK) {
+        if (this.timeSick >= this.healingTime && this.status == STATUS_SICK) {
             // recover or kill the entity
-            if (Math.random() * 100.0 < deathProbability) {
+            if (Math.random() * 100.0 < this.deathProbability) {
                 this.status = STATUS_DEAD;
                 this.acceleration.set(0, 0);
+                this.sprite.zIndex = -666;
             }
             else {
                 this.status = STATUS_RECOVERED;
@@ -94,14 +94,14 @@ export class Entity {
         }
 
         // update color
-        
+
         switch (this.status) {
             case STATUS_HEALTHY:
                 this.sprite.tint = healthy_color;
                 break;
 
             case STATUS_SICK:
-                this.sprite.tint  = sick_color;
+                this.sprite.tint = sick_color;
                 break;
 
             case STATUS_DEAD:
@@ -110,18 +110,18 @@ export class Entity {
                 break;
 
             case STATUS_INFECTED:
-                this.sprite.tint  = infected_color;
+                this.sprite.tint = infected_color;
                 break;
 
             case STATUS_RECOVERED:
-                this.sprite.tint  = recovered_color;
+                this.sprite.tint = recovered_color;
                 break;
 
             default:
                 this.sprite.tint = healthy_color;
                 break;
         }
-        
+
 
         this.checkCollisions();
 
@@ -145,15 +145,6 @@ export class Entity {
         });
     }
 
-    /*
-    public draw() {
-        this.graphics.lineStyle(0);
-
-        this.graphics.beginFill(this.color, 1);
-        this.graphics.drawCircle(this.location.x - this.radius / 2, this.location.y - this.radius / 2, this.radius);
-        this.graphics.endFill();
-    }*/
-
     public getStatus() {
         return this.status;
     }
@@ -162,8 +153,28 @@ export class Entity {
         this.status = status;
     };
 
+    public setIncubationTime(value: number) {
+        this.incubationTime = value;
+    }
+
+    public setHealingTime(value: number) {
+        this.healingTime = value;
+    }
+
+    public setDeathProbability(value: number) {
+        this.deathProbability = value;
+    }
+
+    public setContractionProbability(value: number) {
+        this.contractionProbability = value;
+    }
+
     public getLocation() {
         return this.location;
+    }
+
+    public destroy() {
+        this.stage.removeChild(this.sprite);
     }
 
     private collision(entity: Entity) {
@@ -188,29 +199,11 @@ export class Entity {
         var dist_squared = (this.location.x - entityLocation.x) * (this.location.x - entityLocation.x) + (this.location.y - entityLocation.y) * (this.location.y - entityLocation.y);
 
         if (dist_squared < 4 * (this.radius) * (this.radius)) {
-            if (this.status == STATUS_INFECTED && entity.getStatus() == STATUS_HEALTHY && 100 * Math.random() <= contractionProbability) {
+            if (this.status == STATUS_INFECTED && entity.getStatus() == STATUS_HEALTHY && 100 * Math.random() <= this.contractionProbability) {
                 entity.setStatus(STATUS_INFECTED);
-            } else if (entity.getStatus() == STATUS_SICK && this.getStatus() == STATUS_HEALTHY && 100 * Math.random() <= contractionProbability) {
+            } else if (entity.getStatus() == STATUS_SICK && this.getStatus() == STATUS_HEALTHY && 100 * Math.random() <= this.contractionProbability) {
                 this.setStatus(STATUS_INFECTED);
             }
-            /*
-                        //velocities
-                        if (!b1.isolated && !b2.isolated) {
-                            var temp_dx = b1.dx;
-                            b1.dx = b2.dx;
-                            b2.dx = temp_dx;
-                            var temp_dy = b1.dy;
-                            b1.dy = b2.dy;
-                            b2.dy = temp_dy;
-                        }
-                        else if (b1.isolated) {  // this should be computed...                
-                            computeVelocity(b1, b2);
-                        }
-                        else if (b2.isolated) {  // this should be computed...                                  
-                            computeVelocity(b2, b1);
-            
-                        }
-                        */
         }
     }
 }
