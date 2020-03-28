@@ -10,10 +10,7 @@
     "typeRoots": [
       "node_modules/@types"
     ],
-    "lib": [
-      "es2017",
-      "dom"
-    ],
+    "lib": [ "es5", "dom", "scripthost" ],
     "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
