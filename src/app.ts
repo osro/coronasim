@@ -9,10 +9,12 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
     width: window.innerWidth,
     height: window.innerHeight
   },
-  physics: {
+  physics: {      
     default: "arcade",
     arcade: {
-      debug: true
+      debug: false,
+      maxEntries: 10000,
+      fps: 60
     }
   },
   scene: [BootScene, MainScene],
