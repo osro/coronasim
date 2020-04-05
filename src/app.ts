@@ -13,7 +13,6 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
     default: "arcade",
     arcade: {
       debug: false,
-      maxEntries: 10000,
       fps: 60
     }
   },
